@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-const RegistrationForm = (setpeopleRegistred) =>{
+const RegistrationForm = ({setPeopleRegistered}) =>{
 
     // GETTER AND SETTER FOR PERSON
     const[person, setPerson] = useState({
@@ -22,9 +22,12 @@ const RegistrationForm = (setpeopleRegistred) =>{
         confirm_password: ''
     })
 
+
+    // GETTERS AND SETTERS TO TELL US IF A FORM HAS BEEN SUBMITTED 
+    const [hasBeenSubmitted, setHasBeenSubmitted] = useState(false)
+
     // UPDATE PERSON FUNCTION 
     const updatePerson = e =>{
-        e.preventDefault();
         // TAKES IN E WHICH IS AN OBJECT CONTAINING ALL OF THE USERS INPUT 
         const {name, value } = e.target
         // WE DESTRUCTURE E CALLING THE NAME WHATEVER WE HAVE ASSIGNED AS NAME FOR THE TEXT BOX 
@@ -41,20 +44,32 @@ const RegistrationForm = (setpeopleRegistred) =>{
 
     // CHECKS TO SEE IF WE HAVE ANY ERRORS 
     const validatePersonAttribute = (name, value )=>{
-        // WHEN WE CALL THE validatePersonAttribute FUNCTION IT WILL ALWASY TAKE 2 VALUES
+        // WHEN WE CALL THE validatePersonAttribute FUNCTION IT WILL ALWAYS TAKE 2 VALUES
         //  THAT DETERMINES HOW OUR TERNARY OPERATOR REACTS 
         const validations= {
-        first_name : value => value.length >= 2 ? '': 'input must be more than 2 characters',
+        first_name : value => value.length >= 2 ? true : 'input must be more than 2 characters',
         // IN THE TERNARY OPERATORS ABOVE WE PASS VALUE CHECK IF THE  VALUE LENGTH IS MORE THAN 2
-        // IF THIS IS FALSE WE RETURN TEH STATEMENT IF TRUE WE DO NOTHING 
-        last_name : value => value.length >= 2 ? '': 'input must be more than 2 characters',
-        email : value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)? '' : "please enter a valid email ",
+        // IF THIS IS FALSE WE RETURN THE STATEMENT IF TRUE WE DO NOTHING 
+        // IF IT IS TRUE TEH ATTRIBUTE FOR THIS IS SET TO TRUE 
+        last_name : value => value.length >= 2 ? true : 'input must be more than 2 characters',
+        email : value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)? true : "please enter a valid email ",
         // /^[^\s@]+@[^\s@]+\.[^\s@]+$/ IS REGEX SYNTAX TO CHECK IF AN EMAIL IS VALID 
         // SO WE TAKE THAT SYNTAX AND TEST IF VALUE FOLLOWS THAT  FORMAT 
-        password : value => value.length >= 2 ? '': 'input must be more than 8 characters',
-        confirm_password : value => value.length >= 2 ? '': 'input must be more than 8 characters'
+        password : value => value.length >= 8 ? true : 'input must be more than 8 characters',
+        confirm_password : value => {
+            // CONFIRM PASSWORD HAS A VALUE THAT WE PASS TO USE IN OUR TERNARY OPERATOR 
+            if (name == 'confirm_password'){return person.password === value? true: "passwords don't match"}
+            // IF WE ENTER A CONFIRM PASSWORD AND THE VALUE FOR PASSWORD IS NOT EQUAL TO THE CONFIRM PASSWORD CURRENT VALUE 
+            // RETURN FALSE AND DISPLAY THE MESSAGE "passwords don't match" OR ELSE RETURN TRUE 
+            if(name == 'password') {return person.confirm_password === value ? true : "passwords don't match"}
         }
-
+        }
+        if (name == 'password'){setErrors(prev => ({...prev, ['confirm_password'] : validations ['confirm_password'] (value)}))}
+        // IF THE NAME FOR THE INPUT IS PASSWORD WE CALL OUR SETTER FOR ERRORS 
+        // GRAB ITS PREVIOUS CONTENT MAKE A COPY OF THAT SET ITS NAME TO confirm_password AND FIND  THE VALIDATIONS 
+        // FOR confirm_password AND RETURN ITS VALUE 
+        // SINCE THE NAME IS PASSWORD THIS WILL ADD ON OUR 2ND VALIDATION FOR PASSWORD AND RETURN ITS VALUE 
+        // WE CALL ON confirm_password bc THAT IS WHERE passwords 2nd validation is
         setErrors(prev =>({...prev, [name]: validations [name](value)}))
         // WE CALL OUR SETTERS TO TAKE IN THE FOLLOWING 
         // WE MAKE CALL ALL THE PREVIOUS ERRORS 
@@ -65,20 +80,68 @@ const RegistrationForm = (setpeopleRegistred) =>{
     }
 
 
+
+    // HERE WE VALIDATE THAT THE FORM IS READY TO SUBMIT 
+    const readyToSubmit = () =>{
+
+        for (let key in errors){
+        // WE MAKE A LOOP THAT TAKES ALL TEH KEYS OUT OF TEH ERRORS SUCH AS first_name, last_name and etc.
+        
+            if (errors[key] !==true ){
+                // IF ANY VALUE IN KEY HAS AN IS EQUAL TO NOT TRUE 
+                return false 
+                // RETURN FALSE 
+            }
+        }
+            return true 
+    }
     
-    const submitHandler = (e) =>{
+
+
+    
+    const submitFunction = (e) =>{
         // e represents an object of all the users input 
-        e.preventDefault();
-        // WE CALL THSI EVERYTIME WE PASS e INTO A FUNCTION 
-        return
+        e.preventDefault()
+        // WE CALL THIS EVERYTIME WE PASS e INTO A FUNCTION 
+
+        if (!readyToSubmit() ){
+            // IF READY TO SUBMIT RETURNS FALSE 
+            // ALERT TEH FOLLOWING BELOW 
+            alert('please fill out the form correctly')
+            return
+        }
+        setPeopleRegistered(prev =>[...prev,person])
+        // HERE WE TAKE OUR OG CONTENT THAT HAS ALL THE PEOPLE REGISTERED IN IT
+        // WE MAKE A COPY OF IT AND THEN AND THE NEW PERSON 
+        
+        // HERE WE RESET THE INPUT BOXES TO BLANK AFTER A PERSON
+        setPerson({
+            first_name: '',
+            last_name: '',
+            email: '',
+            password: '',
+            confirm_password: ''
+        })
+        setHasBeenSubmitted(true)
 
 
     }
 
+    // DISPLAYS FORM MESSAGE DEPENDING ON IF A FORM HAS BEEN SUBMITTED OR NOT 
+    const formMessage = () =>{
+        if (hasBeenSubmitted){
+            return "Thank you for submitting a form"
+        }else{
+            return "Welcome, please submit a form"
+        }
+    }
+
 
     return(
-            <form onSubmit={submitHandler}>
+            <form onSubmit={submitFunction}>
                 {/* WHEN WE SUBMIT THIS FORM WE INTIATE THE SUBMIT HANDLER FUNCTION  */}
+                {/* DISPLAYS FORM MESSAGE  */}
+                <h1>{formMessage()}</h1>
                 <p>{person.first_name}</p>
                 {/* LABEL FOR FIRST NAME */}
                 <label>First Name:
@@ -132,7 +195,7 @@ const RegistrationForm = (setpeopleRegistred) =>{
                     {errors.confirm_password && <p>{errors.confirm_password}</p>}
                 </label><br></br>
             
-                <button>Submit</button>
+                <input type="submit" value="createUser"/>
     
     
     
